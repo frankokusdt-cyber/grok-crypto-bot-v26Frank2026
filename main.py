@@ -7,7 +7,7 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 XAI_API_KEY = os.getenv("XAI_API_KEY")
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
-exchange = ccxt.binance({'enableRateLimit': True})
+exchange = ccxt.bybit({'enableRateLimit': True})   # ← 已改成 Bybit
 client = OpenAI(api_key=XAI_API_KEY, base_url="https://api.x.ai/v1")
 
 def call_grok(prompt):
@@ -29,7 +29,7 @@ def start(message):
 def quick(message):
     ticker = exchange.fetch_ticker('ETH/USDT')
     price = ticker['last']
-    prompt = f"当前ETH价格是${price}，请用中文给出简短分析和交易建议"
+    prompt = f"当前ETH价格是${price}，请用中文给出简短分析和交易建议（多/空/观望 + 理由 + 风险）"
     answer = call_grok(prompt)
     bot.reply_to(message, f"📊 ETH 快速分析\n\n{answer}")
 
