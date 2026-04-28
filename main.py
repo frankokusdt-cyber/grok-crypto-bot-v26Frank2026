@@ -13,26 +13,37 @@ client = OpenAI(api_key=XAI_API_KEY, base_url="https://api.x.ai/v1")
 def call_grok(prompt):
     try:
         response = client.chat.completions.create(
-            model="grok-4.20",           # ← 改成这个模型
+            model="grok-4.20",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=600,
-            temperature=0.7
+            max_tokens=800,
+            temperature=0.6
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"Grok调用失败: {str(e)}"   # ← 显示具体错误，方便调试
+        return f"Grok调用失败: {str(e)}"
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.reply_to(message, "🚀 Grok 交易机器人已启动！\n\n可用命令：\n/quick - ETH快速分析\n/calc 10000 - 计算仓位\n/grok_analyze 现在适合做多吗？")
+    bot.reply_to(message, "🚀 Grok 交易机器人（专业版）已启动！\n\n可用命令：\n/quick - ETH专业分析\n/calc 10000 - 计算仓位\n/grok_analyze 现在适合做多吗？")
 
 @bot.message_handler(commands=['quick'])
 def quick(message):
     ticker = exchange.fetch_ticker('ETH/USDT')
     price = ticker['last']
-    prompt = f"当前ETH价格是${price}，请用中文给出简短分析和交易建议（多/空/观望 + 理由 + 风险）"
+    
+    prompt = f"""你是专业加密货币交易员。请根据当前ETH价格 ${price}，用中文给出结构化分析，包含以下内容：
+
+1. 整体判断（多/空/观望）
+2. 关键支撑位和阻力位
+3. 短期（4H-1D）技术面分析
+4. 主要风险点
+5. 具体操作建议（入场区间、止损、目标位）
+6. 仓位管理建议（1%风险原则）
+
+要求：分析简洁专业，重点突出，不要废话。"""
+    
     answer = call_grok(prompt)
-    bot.reply_to(message, f"📊 ETH 快速分析\n\n{answer}")
+    bot.reply_to(message, f"📊 ETH 专业分析\n\n{answer}")
 
 @bot.message_handler(commands=['calc'])
 def calc(message):
@@ -45,13 +56,12 @@ def calc(message):
 
 @bot.message_handler(commands=['grok_analyze'])
 def grok_analyze(message):
-    # 正确提取问题（去掉命令本身）
     question = message.text.replace('/grok_analyze', '').strip()
     if not question:
         bot.reply_to(message, "用法：/grok_analyze 现在ETH适合做多吗？")
         return
-    answer = call_grok(f"你是加密货币专家，请用中文回答：{question}")
+    answer = call_grok(f"你是加密货币专家，请用中文给出专业分析：{question}")
     bot.reply_to(message, f"🤖 Grok：\n\n{answer}")
 
-print("✅ 机器人启动成功！")
+print("✅ 专业版机器人启动成功！")
 bot.polling()
