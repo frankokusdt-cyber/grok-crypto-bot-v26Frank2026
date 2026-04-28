@@ -60,4 +60,29 @@ def quick(message):
 **多周期技术面**：
 15m: RSI {data['15m']['rsi']} | MACD {data['15m']['macd']} | 支撑 {data['15m']['support']} | 阻力 {data['15m']['resistance']}
 1h : RSI {data['1h']['rsi']}  | MACD {data['1h']['macd']}  | 支撑 {data['1h']['support']} | 阻力 {data['1h']['resistance']}
-4h : RSI {data['4h']['rsi']}  | MACD {data['4h']['macd']}  | 支撑 {data['4h']['
+4h : RSI {data['4h']['rsi']}  | MACD {data['4h']['macd']}  | 支撑 {data['4h']['support']} | 阻力 {data['4h']['resistance']}
+12h: RSI {data['12h']['rsi']} | MACD {data['12h']['macd']} | 支撑 {data['12h']['support']} | 阻力 {data['12h']['resistance']}
+1d : RSI {data['1d']['rsi']}  | MACD {data['1d']['macd']}  | 支撑 {data['1d']['support']} | 阻力 {data['1d']['resistance']}
+
+请按以下结构输出：
+1. 快速决策摘要（偏向 + 置信度 + 核心驱动）
+2. 多周期趋势一致性判断
+3. 关键支撑阻力 + ATR动态止损
+4. 三档止盈 + 仓位分配建议
+5. 主要风险 + 操作建议
+6. 一句话结论"""
+
+    answer = call_grok(prompt)
+    bot.reply_to(message, f"📊 ETH 5周期详细分析\n\n{answer}")
+
+@bot.message_handler(commands=['calc'])
+def calc(message):
+    try:
+        equity = float(message.text.split()[1])
+        risk = equity * 0.01
+        bot.reply_to(message, f"💰 账户 ${equity}\n最大风险：${risk}（1%规则）")
+    except:
+        bot.reply_to(message, "用法：/calc 10000")
+
+print("✅ 轻量多周期机器人启动成功！")
+bot.polling()
