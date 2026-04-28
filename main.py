@@ -13,7 +13,7 @@ exchange = ccxt.okx({'enableRateLimit': True})
 client = OpenAI(api_key=XAI_API_KEY, base_url="https://api.x.ai/v1")
 
 def get_multi_tf_data(symbol='ETH/USDT'):
-    timeframes = ['15m', '1h', '4h', '12h', '1d']   # ← 只保留5个关键周期，减轻负担
+    timeframes = ['15m', '1h', '4h', '12h', '1d']
     result = {}
     for tf in timeframes:
         ohlcv = exchange.fetch_ohlcv(symbol, tf, limit=80)
@@ -36,7 +36,7 @@ def get_multi_tf_data(symbol='ETH/USDT'):
 def call_grok(prompt):
     try:
         response = client.chat.completions.create(
-            model="grok-4.3",
+            model="grok-4.20",                    # ← 已改回稳定版本
             messages=[{"role": "user", "content": prompt}],
             max_tokens=1100,
             temperature=0.5
@@ -47,7 +47,7 @@ def call_grok(prompt):
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.reply_to(message, "🚀 Grok 交易机器人（轻量多周期版）已启动！\n\n可用命令：\n/quick - ETH 5周期详细分析\n/calc 10000 - 计算仓位")
+    bot.reply_to(message, "🚀 Grok 交易机器人（稳定版）已启动！\n\n可用命令：\n/quick - ETH 5周期详细分析\n/calc 10000 - 计算仓位")
 
 @bot.message_handler(commands=['quick'])
 def quick(message):
@@ -84,5 +84,5 @@ def calc(message):
     except:
         bot.reply_to(message, "用法：/calc 10000")
 
-print("✅ 轻量多周期机器人启动成功！")
+print("✅ 稳定版机器人启动成功！")
 bot.polling()
