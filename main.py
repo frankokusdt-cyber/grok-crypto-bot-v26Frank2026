@@ -1,8 +1,6 @@
 import os
 import telebot
 import ccxt
-import pandas as pd
-import pandas_ta as ta
 from openai import OpenAI
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -12,33 +10,12 @@ bot = telebot.TeleBot(TELEGRAM_TOKEN)
 exchange = ccxt.okx({'enableRateLimit': True})
 client = OpenAI(api_key=XAI_API_KEY, base_url="https://api.x.ai/v1")
 
-def get_multi_tf_data(symbol='ETH/USDT'):
-    timeframes = ['15m', '1h', '4h', '12h', '1d']
-    result = {}
-    for tf in timeframes:
-        ohlcv = exchange.fetch_ohlcv(symbol, tf, limit=80)
-        df = pd.DataFrame(ohlcv, columns=['ts','o','h','l','c','v'])
-        df['rsi'] = ta.rsi(df['c'], length=14)
-        df['atr'] = ta.atr(df['h'], df['l'], df['c'], length=14)
-        macd = ta.macd(df['c'])
-        df['macd_hist'] = macd['MACDh_12_26_9']
-        latest = df.iloc[-1]
-        result[tf] = {
-            'price': round(latest['c'], 2),
-            'rsi': round(latest['rsi'], 1),
-            'macd': round(latest['macd_hist'], 2),
-            'atr': round(latest['atr'], 2),
-            'support': round(df['l'].tail(25).min(), 2),
-            'resistance': round(df['h'].tail(25).max(), 2)
-        }
-    return result
-
 def call_grok(prompt):
     try:
         response = client.chat.completions.create(
-            model="grok-4.20",                    # ← 已改回稳定版本
+            model="grok-4.20",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=1100,
+            max_tokens=1200,
             temperature=0.5
         )
         return response.choices[0].message.content
@@ -47,33 +24,42 @@ def call_grok(prompt):
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.reply_to(message, "🚀 Grok 交易机器人（稳定版）已启动！\n\n可用命令：\n/quick - ETH 5周期详细分析\n/calc 10000 - 计算仓位")
+    bot.reply_to(message, "🚀 Grok 交易机器人（V2.4详细版）已启动！\n\n可用命令：\n/quick - ETH详细全盘分析\n/calc 10000 - 计算仓位\n/grok_analyze 现在适合做多吗？")
 
 @bot.message_handler(commands=['quick'])
 def quick(message):
-    data = get_multi_tf_data('ETH/USDT')
+    ticker = exchange.fetch_ticker('ETH/USDT')
+    price = ticker['last']
     
-    prompt = f"""你是专业加密货币交易员。请根据以下5个周期数据，用中文给出详细专业分析（控制在650字内）：
+    prompt = f"""你是专业加密货币交易员。请严格按照以下结构，用中文给出**详细专业分析**（控制在600-800字）：
 
-当前价格：${data['1h']['price']}
+当前ETH价格：${price}
 
-**多周期技术面**：
-15m: RSI {data['15m']['rsi']} | MACD {data['15m']['macd']} | 支撑 {data['15m']['support']} | 阻力 {data['15m']['resistance']}
-1h : RSI {data['1h']['rsi']}  | MACD {data['1h']['macd']}  | 支撑 {data['1h']['support']} | 阻力 {data['1h']['resistance']}
-4h : RSI {data['4h']['rsi']}  | MACD {data['4h']['macd']}  | 支撑 {data['4h']['support']} | 阻力 {data['4h']['resistance']}
-12h: RSI {data['12h']['rsi']} | MACD {data['12h']['macd']} | 支撑 {data['12h']['support']} | 阻力 {data['12h']['resistance']}
-1d : RSI {data['1d']['rsi']}  | MACD {data['1d']['macd']}  | 支撑 {data['1d']['support']} | 阻力 {data['1d']['resistance']}
+**一、快速决策摘要**
+- 主偏向（多/空/观望）+ 置信度（1-10分）
+- 核心驱动（技术面/链上/宏观）
+- 建议操作 + 预期R:R
 
-请按以下结构输出：
-1. 快速决策摘要（偏向 + 置信度 + 核心驱动）
-2. 多周期趋势一致性判断
-3. 关键支撑阻力 + ATR动态止损
-4. 三档止盈 + 仓位分配建议
-5. 主要风险 + 操作建议
-6. 一句话结论"""
+**二、技术面判断（多周期）**
+- 短期趋势（15M-1H）
+- 中线趋势（4H-日线）
+- 关键支撑/阻力位 + 验证
+- RSI、MACD、ATR 当前状态
+
+**三、风险提示**（至少3点，包含宏观和链上风险）
+
+**四、操作建议（详细）**
+- 入场区间 + 理由
+- 止损位置（ATR动态）
+- 三档止盈 + 分配比例 + 执行规则
+- 建议杠杆 + 仓位控制（1%风险）
+
+**五、一句话结论 + 主要路径概率**
+
+要求：分析专业、数据具体、有逻辑链条，像专业交易员写的报告一样详细。"""
 
     answer = call_grok(prompt)
-    bot.reply_to(message, f"📊 ETH 5周期详细分析\n\n{answer}")
+    bot.reply_to(message, f"📊 ETH 详细全盘分析（V2.4）\n\n{answer}")
 
 @bot.message_handler(commands=['calc'])
 def calc(message):
@@ -84,5 +70,14 @@ def calc(message):
     except:
         bot.reply_to(message, "用法：/calc 10000")
 
-print("✅ 稳定版机器人启动成功！")
+@bot.message_handler(commands=['grok_analyze'])
+def grok_analyze(message):
+    question = message.text.replace('/grok_analyze', '').strip()
+    if not question:
+        bot.reply_to(message, "用法：/grok_analyze 现在ETH适合做多吗？")
+        return
+    answer = call_grok(f"你是加密货币专家，请用中文给出详细专业分析：{question}")
+    bot.reply_to(message, f"🤖 Grok 详细分析：\n\n{answer}")
+
+print("✅ V2.4详细版机器人启动成功！")
 bot.polling()
