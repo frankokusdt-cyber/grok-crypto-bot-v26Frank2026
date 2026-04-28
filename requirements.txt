@@ -1,5 +1,3 @@
 python-telegram-bot==20.5
 ccxt
-pandas
-pandas-ta
 openai
