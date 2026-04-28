@@ -7,19 +7,20 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 XAI_API_KEY = os.getenv("XAI_API_KEY")
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
-exchange = ccxt.okx({'enableRateLimit': True})   # ← 已换成 OKX
+exchange = ccxt.okx({'enableRateLimit': True})
 client = OpenAI(api_key=XAI_API_KEY, base_url="https://api.x.ai/v1")
 
 def call_grok(prompt):
     try:
         response = client.chat.completions.create(
-            model="grok-4.20",
+            model="grok-4.20",           # ← 改成这个模型
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=500
+            max_tokens=600,
+            temperature=0.7
         )
         return response.choices[0].message.content
-    except:
-        return "Grok暂时无法回答"
+    except Exception as e:
+        return f"Grok调用失败: {str(e)}"   # ← 显示具体错误，方便调试
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -44,6 +45,7 @@ def calc(message):
 
 @bot.message_handler(commands=['grok_analyze'])
 def grok_analyze(message):
+    # 正确提取问题（去掉命令本身）
     question = message.text.replace('/grok_analyze', '').strip()
     if not question:
         bot.reply_to(message, "用法：/grok_analyze 现在ETH适合做多吗？")
