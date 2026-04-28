@@ -1,3 +1,5 @@
 pyTelegramBotAPI
 ccxt
 openai
+pandas
+pandas-ta
