@@ -15,8 +15,8 @@ def call_grok(prompt):
         response = client.chat.completions.create(
             model="grok-4.20",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=900,
-            temperature=0.55
+            max_tokens=1200,
+            temperature=0.5
         )
         return response.choices[0].message.content
     except Exception as e:
@@ -24,41 +24,42 @@ def call_grok(prompt):
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.reply_to(message, "🚀 Grok 交易机器人（V2.4专业版）已启动！\n\n可用命令：\n/quick - ETH专业全盘分析\n/calc 10000 - 计算仓位\n/grok_analyze 现在适合做多吗？")
+    bot.reply_to(message, "🚀 Grok 交易机器人（V2.4详细版）已启动！\n\n可用命令：\n/quick - ETH详细全盘分析\n/calc 10000 - 计算仓位\n/grok_analyze 现在适合做多吗？")
 
 @bot.message_handler(commands=['quick'])
 def quick(message):
     ticker = exchange.fetch_ticker('ETH/USDT')
     price = ticker['last']
     
-    prompt = f"""你是专业加密货币交易员。请严格按照以下结构，用中文给出ETH专业分析（控制在350字内）：
+    prompt = f"""你是专业加密货币交易员。请严格按照以下结构，用中文给出**详细专业分析**（控制在600-800字）：
 
-**当前价格**：${price}
+当前ETH价格：${price}
 
-**快速决策摘要**：
-- 主偏向：多 / 空 / 观望（置信度：__ /10）
-- 核心驱动：技术面 / 链上 / 宏观
-- 建议操作：挂单入场 / 观望
-- 预期R:R：至少1:2.5
+**一、快速决策摘要**
+- 主偏向（多/空/观望）+ 置信度（1-10分）
+- 核心驱动（技术面/链上/宏观）
+- 建议操作 + 预期R:R
 
-**技术面判断**（多周期）：
-- 短期趋势（1H）：_________
-- 中线趋势（4H/日线）：_________
-- 关键支撑/阻力：_________ / _________
+**二、技术面判断（多周期）**
+- 短期趋势（15M-1H）
+- 中线趋势（4H-日线）
+- 关键支撑/阻力位 + 验证
+- RSI、MACD、ATR 当前状态
 
-**风险提示**（至少2点）：
-- _________
-- _________
+**三、风险提示**（至少3点，包含宏观和链上风险）
 
-**操作建议**：
-- 入场区间：_________
-- 止损：_________（ATR动态）
-- 三档止盈：Tier1 $___ (40%) | Tier2 $___ (40%) | Tier3 $___ (20% + trail)
+**四、操作建议（详细）**
+- 入场区间 + 理由
+- 止损位置（ATR动态）
+- 三档止盈 + 分配比例 + 执行规则
+- 建议杠杆 + 仓位控制（1%风险）
 
-**一句话结论**：_________"""
+**五、一句话结论 + 主要路径概率**
+
+要求：分析专业、数据具体、有逻辑链条，像专业交易员写的报告一样详细。"""
 
     answer = call_grok(prompt)
-    bot.reply_to(message, f"📊 ETH 专业分析（V2.4）\n\n{answer}")
+    bot.reply_to(message, f"📊 ETH 详细全盘分析（V2.4）\n\n{answer}")
 
 @bot.message_handler(commands=['calc'])
 def calc(message):
@@ -75,8 +76,8 @@ def grok_analyze(message):
     if not question:
         bot.reply_to(message, "用法：/grok_analyze 现在ETH适合做多吗？")
         return
-    answer = call_grok(f"你是加密货币专家，请用中文给出专业分析：{question}")
-    bot.reply_to(message, f"🤖 Grok：\n\n{answer}")
+    answer = call_grok(f"你是加密货币专家，请用中文给出详细专业分析：{question}")
+    bot.reply_to(message, f"🤖 Grok 详细分析：\n\n{answer}")
 
-print("✅ V2.4专业版机器人启动成功！")
+print("✅ V2.4详细版机器人启动成功！")
 bot.polling()
