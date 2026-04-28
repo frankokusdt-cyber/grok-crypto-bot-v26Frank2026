@@ -1,7 +1,7 @@
 import os
 import asyncio
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Updater, CommandHandler, CallbackContext
 from openai import OpenAI
 import ccxt
 
@@ -23,53 +23,57 @@ def call_grok(prompt: str) -> str:
     except Exception as e:
         return f"Grok调用失败: {str(e)}"
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "🚀 Grok 交易机器人（稳定版）已启动！\n\n"
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text(
+        "🚀 Grok 交易机器人（稳定版13.15）已启动！\n\n"
         "可用命令：\n"
         "/quick - ETH快速分析\n"
         "/calc 10000 - 计算精确仓位\n"
         "/grok_analyze 现在ETH适合做多吗？"
     )
 
-async def quick(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def quick(update: Update, context: CallbackContext):
     ticker = exchange.fetch_ticker('ETH/USDT')
     price = ticker['last']
     prompt = f"当前ETH价格是${price}，请用中文给出简短分析和交易建议（多/空/观望 + 理由 + 风险）"
     answer = call_grok(prompt)
-    await update.message.reply_text(f"📊 ETH 快速分析\n\n{answer}")
+    update.message.reply_text(f"📊 ETH 快速分析\n\n{answer}")
 
-async def calc_position(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def calc_position(update: Update, context: CallbackContext):
     if not context.args:
-        await update.message.reply_text("用法：/calc 10000（输入账户总权益）")
+        update.message.reply_text("用法：/calc 10000（输入账户总权益）")
         return
     equity = float(context.args[0])
     ticker = exchange.fetch_ticker('ETH/USDT')
     price = ticker['last']
     risk = equity * 0.01
-    await update.message.reply_text(
+    update.message.reply_text(
         f"💰 账户 ${equity}\n"
         f"最大风险：${risk}（1%规则）\n"
         f"当前ETH价格：${price}\n\n"
         f"建议：根据1%风险规则手动计算仓位"
     )
 
-async def grok_analyze(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def grok_analyze(update: Update, context: CallbackContext):
     if not context.args:
-        await update.message.reply_text("用法：/grok_analyze 现在比特币适合长期持有吗？")
+        update.message.reply_text("用法：/grok_analyze 现在ETH适合做多吗？")
         return
     question = " ".join(context.args)
     answer = call_grok(f"你是加密货币专家，请用中文回答：{question}")
-    await update.message.reply_text(f"🤖 Grok 回答：\n\n{answer}")
+    update.message.reply_text(f"🤖 Grok 回答：\n\n{answer}")
 
-async def main():
-    app = Application.builder().token(TELEGRAM_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("quick", quick))
-    app.add_handler(CommandHandler("calc", calc_position))
-    app.add_handler(CommandHandler("grok_analyze", grok_analyze))
+def main():
+    updater = Updater(TELEGRAM_TOKEN, use_context=True)
+    dp = updater.dispatcher
+
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("quick", quick))
+    dp.add_handler(CommandHandler("calc", calc_position))
+    dp.add_handler(CommandHandler("grok_analyze", grok_analyze))
+
     print("✅ 稳定版机器人启动成功！")
-    await app.run_polling()
+    updater.start_polling()
+    updater.idle()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
