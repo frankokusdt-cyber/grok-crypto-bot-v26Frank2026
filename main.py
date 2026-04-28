@@ -7,7 +7,7 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 XAI_API_KEY = os.getenv("XAI_API_KEY")
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
-exchange = ccxt.bybit({'enableRateLimit': True})   # ← 已改成 Bybit
+exchange = ccxt.okx({'enableRateLimit': True})   # ← 已换成 OKX
 client = OpenAI(api_key=XAI_API_KEY, base_url="https://api.x.ai/v1")
 
 def call_grok(prompt):
